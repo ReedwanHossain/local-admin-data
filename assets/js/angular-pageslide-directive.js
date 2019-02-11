@@ -71,9 +71,12 @@
                             body.contains(target) &&
                             !slider.contains(target)
                         ) {
-                            isOpen = false;
-                            scope.psOpen = false;
+                            isOpen = true;
+                            scope.psOpen = true;
                             scope.$apply();
+                            // isOpen = false;
+                            // scope.psOpen = false;
+                            // scope.$apply();
                         }
 
                         if(scope.psOpen) {
