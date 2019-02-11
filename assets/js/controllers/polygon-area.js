@@ -97,6 +97,7 @@
                     message: "<div ng-include src=\"'examples/marker-popup.html'\"></div>",
                     pType: ap.pType,
                     Address: ap.Address,
+                    area: ap.area,
                     subtype: ap.subType,
                     uCode: ap.uCode,
                     userID: ap.user_id,
@@ -338,7 +339,8 @@ function onEachFeature(feature, layer) {
                     opacity: 2,
                     color: getColor(),
                     dashArray: '3',
-                    fillOpacity: 0.7
+                    fillOpacity: 0.7,
+                    
                 };
             }
     
@@ -403,6 +405,7 @@ function onEachFeature(feature, layer) {
                     latitude: args.leafletEvent.latlng.lat
                 }
             }
+            $scope.markers= [];
 
             $http.get(urls.REVERSE_GEO_NO_AUTH, data)
                 .success(function (response) {
@@ -423,6 +426,7 @@ function onEachFeature(feature, layer) {
         });
 
          $scope.$on("leafletDirectiveMarker.click", function (event, args) {
+          console.log(args.model)
             DataTunnel.set_data(args.model)
         });
     
