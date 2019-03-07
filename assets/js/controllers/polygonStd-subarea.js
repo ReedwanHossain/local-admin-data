@@ -163,19 +163,18 @@
 
 
   $scope.set_area = function(area) {
-      console.log(area);
+      // console.log(zone);
       // var polyjson = JSON.parse(zone['ST_AsGeoJSON(ward_area)']);
       // console.log(polyjson);
       $scope.id = area['id'];
 
       Auth.getlocations(urls.SUBAREA_BY_AREA+$scope.id+'?', function(res) {
             $scope.roads = res;
-            console.log(res)
             var coordinates = [];
             var temp = [];
             $scope.Feature =[]
             $scope.roads.map(function(road,k) {   
-              var polyjson = road['ST_AsGeoJSON(subarea_area)'];
+              var polyjson = JSON.parse(road['ST_AsGeoJSON(subarea_area)']);
               
               $scope.Feature.push({
                 "type": "Feature",
@@ -212,14 +211,8 @@
                       "type": "FeatureCollection",
                       "features": $scope.Feature
                     },
-                    style: {
-                       
-                            weight: 2,
-                            opacity: 1,
-                            color: 'red',
-                            dashArray: '3',
-                            fillOpacity: 0
-                    },
+                    style: style,
+                    onEachFeature: onEachFeature  
                 },
 
                 selectedRoad : {},
@@ -245,6 +238,43 @@
 
 
 
+function getColor() {
+                var o = Math.round, r = Math.random, s = 255;
+    return 'rgb(' + o(r()*s) + ',' + o(r()*s) + ',' + o(r()*s)+')';
+    //return 'rgba(' + o(r()*s) + ',' + o(r()*s) + ',' + o(r()*s) + ',' + r().toFixed(1) + ')';
+
+            }
+
+
+function whenClicked(e) {
+  // e = event
+  console.log(e.target.feature.properties.name)
+  swal(e.target.feature.properties.name, '')
+  // toaster.pop('success', e.target.feature.properties.name);
+  // You can make your ajax call declaration here
+  //$.ajax(... 
+}
+
+
+function onEachFeature(feature, layer) {
+    //bind click
+    layer.on({
+        click: whenClicked
+    });
+}
+
+
+
+
+  function style(feature) {
+                return {
+                    fillColor: getColor(),
+                    opacity: 2,
+                    color: getColor(),
+                    dashArray: '3',
+                    fillOpacity: 0.7
+                };
+            }
             
 
 
