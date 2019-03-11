@@ -1,7 +1,12 @@
 (function() {
     "use strict";
 
-    angular.module("barikoi").controller("PolygonArea", PolygonArea);
+    angular.module("barikoi").controller("PolygonArea", PolygonArea)
+        .controller('MarkerPopup', ['$scope', '$modal', 'urls', 'Auth', 'DataTunnel', function($scope, $modal, urls, Auth, DataTunnel) {
+            $scope.place = DataTunnel.get_data();
+            console.log($scope.place);
+        }]);
+
 
     PolygonArea.$inject = [
         "$scope",
@@ -148,30 +153,24 @@
         }
 
 
-        $scope.definedLayers = {
-            bkoi: {
-                name: "barikoi",
-                url: "http://map.barikoi.xyz:8080/styles/klokantech-basic/{z}/{x}/{y}.png",
-                type: "xyz",
-                layerOptions: {
-                    attribution: "Barikoi",
-                    maxZoom: 23
-                }
-            },
+        var addressPointsToMarkers = function(points) {
+            return points.map(function(ap) {
 
-            mapbox_street: {
-                name: "Mapbox Streets",
-                url: "http://api.tiles.mapbox.com/v4/{mapid}/{z}/{x}/{y}.png?access_token={apikey}",
-                type: "xyz",
-                layerOptions: {
-                    apikey: "pk.eyJ1Ijoicmhvc3NhaW4iLCJhIjoiY2o4Ymt0NndlMHVoMDMzcnd1ZGs4dnJjMSJ9.5Y-mrWQCMXqWTe__0J5w4w",
-                    mapid: "mapbox.streets",
-                    maxZoom: 23
-                },
-                layerParams: {
-                    showOnSelector: true
-                }
-            },
+                return {
+                    id: ap.id,
+                    lat: parseFloat(ap.latitude),
+                    lng: parseFloat(ap.longitude),
+                    message: "<div ng-include src=\"'examples/marker-popup.html'\"></div>",
+                    pType: ap.pType,
+                    Address: ap.Address,
+                    subtype: ap.subType,
+                    uCode: ap.uCode,
+                    userID: ap.user_id,
+                    updated_at: ap.updated_at,
+
+
+                };
+            });
         };
 
         angular.extend($scope, {
@@ -185,14 +184,49 @@
             },
             events: {
                 map: {
-                    enable: ["moveend", "popupopen"],
+                    enable: ["moveend", "popupopen", "dblclick"],
                     logic: "emit"
+                },
+                marker: {
+                    enable: ['click', 'dblclick', 'dragend'],
+                    logic: 'emit'
                 }
             },
             layers: {
                 baselayers: {
-                    bkoi: $scope.definedLayers.bkoi,
-                    mapbox_street: $scope.definedLayers.mapbox_street
+                    // bkoi: {
+                    //   name: "barikoi",
+                    //   url:
+                    //     "http://map.barikoi.xyz:8080/styles/klokantech-basic/{z}/{x}/{y}.png",
+                    //   type: "xyz",
+                    //   layerOptions: {
+                    //     attribution: "Barikoi",
+                    //     maxZoom: 23
+                    //   }
+                    // },
+
+                    mapbox_light: {
+                        name: "Mapbox Streets",
+                        url: "http://api.tiles.mapbox.com/v4/{mapid}/{z}/{x}/{y}.png?access_token={apikey}",
+                        type: "xyz",
+                        layerOptions: {
+                            apikey: "pk.eyJ1Ijoicmhvc3NhaW4iLCJhIjoiY2o4Ymt0NndlMHVoMDMzcnd1ZGs4dnJjMSJ9.5Y-mrWQCMXqWTe__0J5w4w",
+                            mapid: "mapbox.streets",
+                            maxZoom: 23
+                        },
+                        layerParams: {
+                            showOnSelector: true
+                        }
+                    },
+
+                    osm: {
+                        name: "OpenStreetMap",
+                        url: "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        type: "xyz",
+                        layerOptions: {
+                            maxZoom: 23
+                        }
+                    }
                 },
                 overlays: {
                     draw: {
@@ -205,19 +239,6 @@
                     }
                 }
             }
-        });
-
-
-        $http.get('http://map.barikoi.xyz:8080').success(function() {
-             // var baselayers = $scope.layers.baselayers;
-             //    if (baselayers.hasOwnProperty('bkoi')) {
-             //        delete baselayers['bkoi'];
-             //    }
-        }).error(function() {
-          var baselayers = $scope.layers.baselayers;
-                if (baselayers.hasOwnProperty('bkoi')) {
-                    delete baselayers['bkoi'];
-                }
         });
 
         leafletData.getMap().then(function(map) {
@@ -304,10 +325,7 @@
                 opacity: 2,
                 color: getColor(),
                 dashArray: "3",
-                fillOpacity: 0.7,
-                text: {
-                  text: 'areaname'
-                }
+                fillOpacity: 0.7
             };
         }
 
@@ -355,5 +373,40 @@
             $scope.center.lat = marker.lat;
             $scope.center.lng = marker.lng;
         };
+
+
+        $scope.$on("leafletDirectiveMap.dblclick", function(event, args) {
+
+            // console.log(args.leafletEvent.latlng.lat)
+            // console.log(args.leafletEvent.latlng.lng)
+
+            let data = {
+                params: {
+                    longitude: args.leafletEvent.latlng.lng,
+                    latitude: args.leafletEvent.latlng.lat
+                }
+            }
+
+            $http.get(urls.REVERSE_GEO_NO_AUTH, data)
+                .success(function(response) {
+
+                    console.log(response[0])
+
+                    let reverseData = response[0]
+
+                    if (typeof reverseData !== 'undefined') {
+                        $scope.selecting = reverseData.Address
+                    } else {
+                        $scope.selecting = 'No data found!'
+                    }
+
+                    $scope.markers = addressPointsToMarkers(response)
+
+                })
+        });
+
+        $scope.$on("leafletDirectiveMarker.click", function(event, args) {
+            DataTunnel.set_data(args.model)
+        });
     }
 })();
